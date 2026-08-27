@@ -1,5 +1,8 @@
 package com.sancharsaathi.app.presentation.settings
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -13,6 +16,7 @@ import com.sancharsaathi.app.BuildConfig
 import com.sancharsaathi.app.permissions.SmsPermissionManager
 import com.sancharsaathi.app.presentation.components.AppTopBar
 import com.sancharsaathi.app.presentation.components.PrimaryButton
+import com.sancharsaathi.app.presentation.components.SecondaryButton
 
 @Composable
 fun SettingsScreen(
@@ -21,6 +25,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val hasPermission = remember { SmsPermissionManager.hasSmsPermissions(context) }
+    val canDrawOverlays = remember { SmsPermissionManager.canDrawOverlays(context) }
 
     Scaffold(
         topBar = {
@@ -35,7 +40,7 @@ fun SettingsScreen(
         ) {
             item {
                 Text(
-                    text = "SMS Scanning Permissions",
+                    text = "SMS Scanning & Alert Permissions",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -63,7 +68,7 @@ fun SettingsScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "On modern Android versions, background SMS reception without being set as the default SMS application is best-effort. Demo Mode and Share-to-App are always available.",
+                            text = "On modern Android versions, background SMS reception is best-effort. Demo Mode and Share-to-App are always available.",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         if (!hasPermission) {
@@ -71,6 +76,45 @@ fun SettingsScreen(
                             PrimaryButton(
                                 text = "Request SMS Permissions",
                                 onClick = onRequestSmsPermissions
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Floating Alert Overlay",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = if (canDrawOverlays) "Granted" else "Disabled",
+                                color = if (canDrawOverlays) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Allows SancharSaathi to display a floating scam alert directly over other apps when a high-risk SMS arrives. If disabled, high-priority notifications will be used instead.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        if (!canDrawOverlays) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            SecondaryButton(
+                                text = "Enable Display Over Other Apps",
+                                onClick = {
+                                    val intent = Intent(
+                                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                }
                             )
                         }
                     }
@@ -93,6 +137,7 @@ fun SettingsScreen(
                         Text(
                             text = "SancharSaathi combines multiple independent security signals:\n\n" +
                                    "• Message Content Analysis: Detects urgency cues, credential requests, financial bait, and intimidation language.\n" +
+                                   "• Machine Learning Microservice: Evaluates text intent with specialized threat classification models.\n" +
                                    "• URL & Domain Checks: Evaluates lookalike brand imitations, suspicious TLDs, IP hosts, shorteners, and non-HTTPS links.\n" +
                                    "• Threat Intelligence: Queries domain age & threat registries (RDAP / OpenPhish / Web Risk).\n" +
                                    "• Identity Verification: Cross-checks senders against TRAI DLT registered entity headers.",

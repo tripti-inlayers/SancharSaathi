@@ -9,8 +9,11 @@ import com.sancharsaathi.app.data.repository.AnalysisRepositoryImpl
 import com.sancharsaathi.app.data.repository.ReportRepository
 import com.sancharsaathi.app.data.repository.ReportRepositoryImpl
 import com.sancharsaathi.app.domain.capture.DemoContentSource
+import com.sancharsaathi.app.domain.overlay.OverlayTriggerUseCase
 import com.sancharsaathi.app.domain.usecase.AnalyzeContentUseCase
 import com.sancharsaathi.app.domain.usecase.SubmitReportUseCase
+import com.sancharsaathi.app.presentation.overlay.SmsNotificationManager
+import com.sancharsaathi.app.presentation.overlay.SmsOverlayManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -20,6 +23,16 @@ import java.util.concurrent.TimeUnit
 object AppModule {
     lateinit var appContext: Context
         private set
+
+    fun initialize(context: Context) {
+        if (!::appContext.isInitialized) {
+            appContext = context.applicationContext
+        }
+    }
+
+    fun ensureInitialized(context: Context) {
+        initialize(context)
+    }
 
     val historyStore by lazy { HistoryStore() }
     val demoContentSource by lazy { DemoContentSource() }
@@ -67,7 +80,15 @@ object AppModule {
         SubmitReportUseCase(reportRepository)
     }
 
-    fun initialize(context: Context) {
-        appContext = context.applicationContext
+    val smsNotificationManager by lazy {
+        SmsNotificationManager(appContext)
+    }
+
+    val smsOverlayManager by lazy {
+        SmsOverlayManager(appContext, smsNotificationManager)
+    }
+
+    val overlayTriggerUseCase by lazy {
+        OverlayTriggerUseCase(smsOverlayManager, smsNotificationManager)
     }
 }

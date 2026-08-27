@@ -9,6 +9,7 @@ from app.services.threat_intel.base import ThreatIntelVerdict
 from app.services.threat_intel.mock_provider import MockThreatIntelProvider
 from app.services.threat_intel.rdap_provider import RdapThreatIntelProvider
 from app.services.identity.dlt_mock_provider import DltMockIdentityProvider
+from app.services.ml_client import MlAnalysisClient
 from app.services.risk_fusion import RiskFusionEngine
 from app.services.ml_analysis import MlAnalysisService
 from app.repositories.analysis_repository import get_analysis_repository
@@ -27,6 +28,7 @@ class AnalysisOrchestrator:
             self.threat_intel_provider = MockThreatIntelProvider()
 
         self.identity_provider = DltMockIdentityProvider()
+        self.ml_client = MlAnalysisClient()
         self.fusion_engine = RiskFusionEngine()
         self.repo = get_analysis_repository()
 
@@ -124,7 +126,20 @@ class AnalysisOrchestrator:
             degraded = True
             degraded_reasons.append("identity_verification_timeout")
 
-        # 5. Risk Fusion
+        # 5. ML Service Signals (Backend microservice)
+        try:
+            ml_signal = await self.ml_client.predict(request.text, request.urls)
+            if ml_signal is not None:
+                all_signals.append(ml_signal)
+            elif settings.ML_SERVICE_ENABLED:
+                degraded = True
+                degraded_reasons.append("ml_service_unavailable")
+        except Exception as e:
+            logger.error(f"ML service integration error: {e}")
+            degraded = True
+            degraded_reasons.append("ml_service_error")
+
+        # 6. Risk Fusion
         score, level, confidence, reasons, action, should_block, should_report = self.fusion_engine.fuse(
             signals=all_signals,
             has_url=bool(request.urls),

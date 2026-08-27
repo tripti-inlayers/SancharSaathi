@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     THREAT_INTEL_PROVIDER: str = "mock"
     IDENTITY_PROVIDER: str = "mock"
     REPORTING_PROVIDER: str = "mock"
+    ML_SERVICE_URL: str = "http://127.0.0.1:8001"
+    ML_SERVICE_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
     ML_SERVICE_URL: str = "http://localhost:8001"
 

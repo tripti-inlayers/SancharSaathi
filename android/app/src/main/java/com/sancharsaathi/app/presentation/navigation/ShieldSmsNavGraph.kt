@@ -43,14 +43,19 @@ fun SancharSaathiNavGraph(
     var activeResultForReport by remember { mutableStateOf<RiskResult?>(null) }
     var showPermissionRationale by remember { mutableStateOf(false) }
 
-    // Handle shared text intent from outside app
+    // Handle shared text or overlay PendingIntent deep link from outside app
     LaunchedEffect(intent) {
-        if (intent != null && intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {
-            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-            if (!sharedText.isNullOrBlank()) {
-                val req = SharedContentChannel.emitSharedText(sharedText)
-                val json = gson.toJson(req)
-                navController.navigate(Destinations.Analyzing.createRoute(json))
+        if (intent != null) {
+            val analysisId = intent.getStringExtra("EXTRA_ANALYSIS_ID")
+            if (!analysisId.isNullOrBlank()) {
+                navController.navigate(Destinations.Result.createRoute(analysisId))
+            } else if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+                val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+                if (!sharedText.isNullOrBlank()) {
+                    val req = SharedContentChannel.emitSharedText(sharedText)
+                    val json = gson.toJson(req)
+                    navController.navigate(Destinations.Analyzing.createRoute(json))
+                }
             }
         }
     }
